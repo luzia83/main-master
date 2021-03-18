@@ -8,8 +8,10 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.ColumnName;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.functions;
-import static org.apache.spark.sql.functions.col;
-import static org.apache.spark.sql.functions.sum;
+import static org.apache.spark.sql.functions.*;
+import org.apache.spark.storage.StorageLevel;
+import javax.xml.crypto.Data;
+import java.util.List;
 
 public class BasicOperations {
     public static void main(String[] args) {
@@ -61,7 +63,7 @@ public class BasicOperations {
         dataFrame.withColumn("Senior", col("Age").gt(50)).show();
 
         //Rename HasACar as Owner
-        dataFrame.withColumnRenamed("HasAName", "Owner").show();
+        dataFrame.withColumnRenamed("HasACar", "Owner").show();
 
         //Remove a column
         dataFrame.drop("BirthDate").show();
@@ -71,14 +73,15 @@ public class BasicOperations {
         dataFrame.orderBy(col("Age").desc(), col("Weight")).show();
 
         //Get a RDD from a DataFrame
-        JavaRDD<Row> rddFromDataFrame = dataFrame.javaRDD();
-        for (Row row: rddFromDataFrame.collect()) {
+        JavaRDD<Row> rddFromDataFrame = dataFrame.javaRDD().persist(StorageLevel.MEMORY_AND_DISK());
+
+        for (Row row : rddFromDataFrame.collect()) {
             System.out.println(row);
         }
 
         //sum all weights (RDDs)
         double sumOfWeights = rddFromDataFrame
-                .map(row -> row.getDouble(2))
+                .map(row -> Double.valueOf((String) row.get(2)))
                 .reduce((x,y) -> x+y);
 
         System.out.println("Sum of weights (RDD): " + sumOfWeights);
@@ -89,11 +92,11 @@ public class BasicOperations {
         dataFrame.agg(sum("Weight")).show();
 
         System.out.println("Sum of weights (RDD): " +
-                dataFrame.select("Weight").groupBy().sum().collectAsList().get(0).get(0));
+                dataFrame.agg(sum("weight")).collectAsList().get(0).get(0));
 
         //Compute the mean age (RDDs)
         int sumOfAges = rddFromDataFrame
-                .map(row -> row.getInt(1))
+                .map(row -> Integer.valueOf((String) row.get(1)))
                 .reduce((x,y) -> x+y);
 
         System.out.println("Mean age: " + sumOfAges/rddFromDataFrame.count());
