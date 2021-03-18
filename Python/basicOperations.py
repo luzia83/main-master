@@ -1,21 +1,36 @@
 from pyspark.sql import SparkSession, functions
 
 
-def main():
+def main() -> None:
     spark_session = SparkSession\
         .builder\
         .master("local[8]")\
         .getOrCreate()
 
-    data_frame = spark_session\
-        .read\
-        .format("csv")\
-        .options(header='true', inferschema='true')\
-        .load("data/simple.csv")
+    logger = spark_session._jvm.org.apache.log4j
+    logger.LogManager.getLogger("org").setLevel(logger.Level.WARN)
 
+    data_frame = spark_session \
+        .read \
+        .options(header='true', inferschema='true') \
+        .option("delimiter", ",") \
+        .csv("data/simple.csv") \
+        .persist()
+
+    data_frame.printSchema()
+    data_frame.show()
+
+    # Print the data types of the data frame
+    print("data types: " + str(data_frame.dtypes))
+
+    # Describe the dataframe
     data_frame\
         .describe()\
         .show()
+
+    # Explain the dataframe
+    data_frame \
+        .explain()
 
     # select the names
     data_frame.select("Name").show()
@@ -27,7 +42,7 @@ def main():
     data_frame.select("Name", data_frame["Age"] + 2).show()
 
     # select rows having a name length > 4
-    data_frame.select(functions.lentgh("Name") > 4).show()
+    data_frame.select(functions.length("Name") > 4).show()
 
     # select names starting with L
     data_frame\
@@ -59,7 +74,7 @@ def main():
     # Sum all the weights (RDD)
     sum_of_weights = rdd_from_dataframe\
         .map(lambda row: row[2])\
-        .reduce(lambda x, y: x + y) # sum()
+        .reduce(lambda x, y: x + y)
     print("Sum of weights (RDDs): " + str(sum_of_weights))
 
     v = data_frame.select("Weight").groupBy().sum().collect()
@@ -67,19 +82,33 @@ def main():
     print(v[0][0])
 
     # Sum all the weights (dataframe)
+    weights = data_frame \
+        .select("Weight") \
+        .groupBy() \
+        .sum() \
+        .collect()
+
+    print(weights)
+    print("Sum of weights (dataframe): " + str(weights[0][0]))
+
     data_frame.select(functions.sum(data_frame["Weight"])).show()
-    data_frame.agg({"Weight" : "sum"}).show()
+    data_frame.agg({"Weight": "sum"}).show()
 
     # Get the mean age (RDD)
-    mean_age = rdd_from_dataframe\
-        .map(lambda row: row[1])\
-        .reduce(lambda x, y: x + y) / rdd_from_dataframe.count()
+    total_age = rdd_from_dataframe\
+        .map(lambda row: row[1]) \
+        .reduce(lambda x, y: x + y)
+
+    mean_age = total_age / rdd_from_dataframe.count()
 
     print("Mean age (RDDs): " + str(mean_age))
 
     # Get the mean age (dataframe)
-    data_frame.select(functions.avg(data_frame["Weight"])).show()
-    data_frame.agg({"Weight" : "avg"}).show()
+    data_frame.select(functions.avg(data_frame["Weight"])) \
+        .withColumnRenamed("avg(Weight)", "Average") \
+        .show()
+
+    data_frame.agg({"Weight": "avg"}).show()
 
     # Write to a json file
     data_frame\
@@ -92,5 +121,5 @@ def main():
         .format("csv")\
         .save("output.csv")
 
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()
