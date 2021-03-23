@@ -19,7 +19,7 @@ public class FilmLocationsSanFrancisco {
 
         // Step 1. Create a SparkConf object, takes 4 cores
         SparkConf sparkConf = new SparkConf()
-                .setAppName("Add numbers from files")
+                .setAppName("Film locations in San Francisco")
                 .setMaster("local[4]");
 
         // Step 2. Create a Java Spark context
@@ -74,7 +74,7 @@ public class FilmLocationsSanFrancisco {
                 .sortByKey(false)
                 .collect();
 
-        // STEP 11: print the results and save to a text file
+        // STEP 14: print the results and save to a text file
         try {
             PrintWriter out = new PrintWriter("filmLocationsSanFrancisco.txt");
 

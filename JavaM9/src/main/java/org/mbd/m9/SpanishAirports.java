@@ -19,7 +19,7 @@ public class SpanishAirports {
 
         // Step 1. Create a SparkConf object, takes 4 cores
         SparkConf sparkConf = new SparkConf()
-                .setAppName("Add numbers from files")
+                .setAppName("Spanish airports")
                 .setMaster("local[4]");
 
         // Step 2. Create a Java Spark context
